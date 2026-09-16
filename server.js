@@ -9,7 +9,9 @@ const crypto = require('crypto');
 const { performance } = require('perf_hooks');
 
 const PORT = process.env.PORT || 3000;
-const PUB = path.join(__dirname, 'public');
+// الصفحات تكون في مجلد public، وإذا انرفعت بجنب server.js نشغّلها من هناك
+const PUB = fs.existsSync(path.join(__dirname, 'public', 'online.html')) ? path.join(__dirname, 'public') : __dirname;
+const ROOT_FILES = new Set(['/index.html', '/online.html', '/favicon.png']);
 const BOT_THINK_MS = +process.env.BOT_THINK_MS || 350;   // وقت تفكير اللاعب الآلي
 const AWAY_BOT_MS = +process.env.AWAY_BOT_MS || 25000;                                // لو لاعب فصل، الآلي يلعب عنه بعد هالوقت
 const TARGET = 101;
@@ -391,6 +393,7 @@ const server = http.createServer(async (req, res) => {
     // الملفات
     let file = url.pathname === '/' ? '/index.html' : decodeURIComponent(url.pathname);
     file = path.normalize(file).replace(/^(\.\.[/\\])+/, '');
+    if (PUB === __dirname && !ROOT_FILES.has(file.replace(/\\/g, '/'))) { res.writeHead(404); return res.end('Not found'); }
     const full = path.join(PUB, file);
     if (!full.startsWith(PUB) || !fs.existsSync(full) || fs.statSync(full).isDirectory()) { res.writeHead(404); return res.end('Not found'); }
     res.writeHead(200, { 'Content-Type': MIME[path.extname(full)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
